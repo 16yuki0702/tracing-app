@@ -25,12 +25,15 @@ spec:
     spec:
       restartPolicy: Always
       containers:
-      - image: image-registry.openshift-image-registry.svc:5000/sample-tracing/dest2:latest
+      - image: image-registry.openshift-image-registry.svc:5000/sample-tracing/gateway:latest
         imagePullPolicy: Always
         name: dest2
         ports:
         - containerPort: 8080
           protocol: TCP
+        envFrom:
+        - configMapRef:
+            name: dest2-cfg
 ---
 apiVersion: v1
 kind: Service
@@ -48,3 +51,11 @@ spec:
   selector:
     app: dest2
     deploymentconfig: dest2
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dest2-cfg
+data:
+  SERVICE_NAME: "dest2"
+  SERVICE_NUM: "3"

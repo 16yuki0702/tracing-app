@@ -27,30 +27,13 @@ spec:
       containers:
       - image: image-registry.openshift-image-registry.svc:5000/sample-tracing/gateway:latest
         imagePullPolicy: Always
+        name: gateway
         ports:
         - containerPort: 8080
           protocol: TCP
-        livenessProbe:
-          failureThreshold: 3
-          httpGet:
-            path: /health
-            port: 8080
-            scheme: HTTP
-          initialDelaySeconds: 30
-          periodSeconds: 10
-          successThreshold: 1
-          timeoutSeconds: 1
-        name: gateway
-        readinessProbe:
-          failureThreshold: 3
-          httpGet:
-            path: /readiness
-            port: 8080
-            scheme: HTTP
-          initialDelaySeconds: 30
-          periodSeconds: 10
-          successThreshold: 1
-          timeoutSeconds: 5
+        envFrom:
+        - configMapRef:
+            name: gateway-cfg
 ---
 apiVersion: v1
 kind: Service
@@ -68,6 +51,17 @@ spec:
   selector:
     app: gateway
     deploymentconfig: gateway
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gateway-cfg
+data:
+  SERVICE_NAME: "gateway"
+  SERVICE_NUM: "3"
+  DEST1: "http://dest1-svc:8080"
+  DEST2: "http://dest1-svc:8080/forward2"
+  DEST3: "http://dest3-svc:8080"
 ---
 apiVersion: networking.istio.io/v1alpha3
 kind: Gateway
