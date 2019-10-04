@@ -1,0 +1,50 @@
+apiVersion: apps.openshift.io/v1
+kind: DeploymentConfig
+metadata:
+  labels:
+    app: dest3
+  name: dest3
+spec:
+  replicas: 1
+  revisionHistoryLimit: 5
+  selector:
+    app: dest3
+    deploymentconfig: dest3
+  strategy:
+    activeDeadlineSeconds: 21600
+    resources: {}
+    type: Rolling
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/inject: "true"
+      labels:
+        app: dest3
+        version: v1
+        deploymentconfig: dest3
+    spec:
+      restartPolicy: Always
+      containers:
+      - image: image-registry.openshift-image-registry.svc:5000/sample-tracing/dest3:latest
+        imagePullPolicy: Always
+        name: dest3
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dest3-svc
+  labels:
+    app: dest3-svc
+    service: dest3-svc
+spec:
+  ports:
+  - name: 8080-tcp
+    port: 8080
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: dest3
+    deploymentconfig: dest3
