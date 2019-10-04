@@ -10,7 +10,7 @@ import (
 	"syscall"
 	"time"
 
-    "github.com/16yuki0702/tracing-app/util"
+    "github.com/16yuki0702/tracing-app/tracing"
 	"github.com/gorilla/mux"
     opentracing "github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/ext"
