@@ -30,7 +30,6 @@ spec:
         name: dest2
         ports:
         - containerPort: 8080
-          protocol: TCP
         envFrom:
         - configMapRef:
             name: dest2-cfg
@@ -38,15 +37,14 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: dest2-svc
+  name: dest2
   labels:
-    app: dest2-svc
-    service: dest2-svc
+    app: dest2
+    service: dest2
 spec:
   ports:
-  - name: 8080-tcp
+  - name: http
     port: 8080
-    protocol: TCP
     targetPort: 8080
   selector:
     app: dest2

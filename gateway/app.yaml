@@ -30,7 +30,6 @@ spec:
         name: gateway
         ports:
         - containerPort: 8080
-          protocol: TCP
         envFrom:
         - configMapRef:
             name: gateway-cfg
@@ -38,15 +37,14 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: gateway-svc
+  name: gateway
   labels:
-    app: gateway-svc
-    service: gateway-svc
+    app: gateway
+    service: gateway
 spec:
   ports:
-  - name: 8080-tcp
+  - name: http
     port: 8080
-    protocol: TCP
     targetPort: 8080
   selector:
     app: gateway
@@ -59,9 +57,9 @@ metadata:
 data:
   SERVICE_NAME: "gateway"
   SERVICE_NUM: "3"
-  DEST1: "http://dest1-svc:8080"
-  DEST2: "http://dest1-svc:8080/forward2"
-  DEST3: "http://dest3-svc:8080"
+  TRACE1: "http://dest1:8080"
+  TRACE2: "http://dest1:8080/propagate2"
+  TRACE3: "http://dest3:8080"
 ---
 apiVersion: networking.istio.io/v1alpha3
 kind: Gateway
@@ -92,14 +90,14 @@ spec:
     - uri:
         exact: /
     - uri:
-        exact: /todest1
+        exact: /trace1
     - uri:
-        exact: /todest2
+        exact: /trace2
     - uri:
-        exact: /todest3
+        exact: /trace3
     route:
     - destination:
-        host: gateway-svc
+        host: gateway
         port:
           number: 8080
 ---
@@ -108,14 +106,14 @@ kind: DestinationRule
 metadata:
   name: gateway
 spec:
-  host: gateway-svc
+  host: gateway
   subsets:
   - name: v1
     labels:
       version: v1
     route:
     - destination:
-        host: gateway-svc
+        host: gateway
         port:
           number: 8080
 ---
@@ -124,7 +122,7 @@ kind: DestinationRule
 metadata:
   name: gateway
 spec:
-  host: gateway-svc
+  host: gateway
   subsets:
   - name: v1
     labels:

@@ -30,7 +30,6 @@ spec:
         name: dest1
         ports:
         - containerPort: 8080
-          protocol: TCP
         envFrom:
         - configMapRef:
             name: dest1-cfg
@@ -38,15 +37,14 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: dest1-svc
+  name: dest1
   labels:
-    app: dest1-svc
-    service: dest1-svc
+    app: dest1
+    service: dest1
 spec:
   ports:
-  - name: 8080-tcp
+  - name: http
     port: 8080
-    protocol: TCP
     targetPort: 8080
   selector:
     app: dest1
@@ -59,4 +57,4 @@ metadata:
 data:
   SERVICE_NAME: "dest1"
   SERVICE_NUM: "3"
-  FORWARD2: "http://dest2-svc:8080"
+  PROPAGATE2: "http://dest2:8080"

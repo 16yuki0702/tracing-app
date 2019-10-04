@@ -15,13 +15,18 @@ import (
 func handler(w http.ResponseWriter, r *http.Request) {
 	serviceName := os.Getenv("SERVICE_NAME")
 	resptStr := fmt.Sprintf("Hello from %s!!", serviceName)
-	tracing.Trace(w, r, serviceName, resptStr)
 	w.Write([]byte(resptStr))
 }
 
-func generateForwardFunc(envName string) func(w http.ResponseWriter, r *http.Request) {
+func generateTraceFunc(envName string) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		tracing.TraceWithForward(w, r, os.Getenv("SERVICE_NAME"), os.Getenv(envName))
+		tracing.Trace(w, r, os.Getenv("SERVICE_NAME"), os.Getenv(envName))
+	}
+}
+
+func generatePropagateFunc(envName string) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		tracing.Propagate(w, r, os.Getenv(envName))
 	}
 }
 
@@ -35,12 +40,18 @@ func getServiceNum() int {
 }
 
 func main() {
+	if os.Getenv("SERVICE_NAME") == "gateway" {
+		log.Println("Start init tracing")
+		_, closer := tracing.InitTracing(os.Getenv("SERVICE_NAME"))
+		defer closer.Close()
+	}
+
 	r := mux.NewRouter()
 
 	r.HandleFunc("/", handler)
 	for i := getServiceNum(); i > 0; i-- {
-		r.HandleFunc(fmt.Sprintf("/todest%d", i), generateForwardFunc(fmt.Sprintf("DEST%d", i)))
-		r.HandleFunc(fmt.Sprintf("/forward%d", i), generateForwardFunc(fmt.Sprintf("FORWARD%d", i)))
+		r.HandleFunc(fmt.Sprintf("/trace%d", i), generateTraceFunc(fmt.Sprintf("TRACE%d", i)))
+		r.HandleFunc(fmt.Sprintf("/propagate%d", i), generatePropagateFunc(fmt.Sprintf("PROPAGATE%d", i)))
 	}
 
 	srv := &http.Server{

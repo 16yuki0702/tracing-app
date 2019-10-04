@@ -14,9 +14,8 @@ import (
 
 	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/ext"
-	otlog "github.com/opentracing/opentracing-go/log"
 	jaeger "github.com/uber/jaeger-client-go"
-	config "github.com/uber/jaeger-client-go/config"
+	"github.com/uber/jaeger-client-go/zipkin"
 )
 
 func WaitForShutdown(srv *http.Server) {
@@ -33,26 +32,46 @@ func WaitForShutdown(srv *http.Server) {
 	os.Exit(0)
 }
 
-func Trace(w http.ResponseWriter, r *http.Request, traceName, logValue string) {
-	tracer, closer := initTracing(traceName)
-	defer closer.Close()
+func Propagate(w http.ResponseWriter, r *http.Request, url string) {
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		panic(err.Error())
+	}
 
-	spanCtx, _ := tracer.Extract(opentracing.HTTPHeaders, opentracing.HTTPHeadersCarrier(r.Header))
-	span := tracer.StartSpan(traceName, ext.RPCServerOption(spanCtx))
-	defer span.Finish()
+	incomingHeaders := []string{
+		"x-request-id",
+		"x-b3-traceid",
+		"x-b3-spanid",
+		"x-b3-parentspanid",
+		"x-b3-sampled",
+		"x-b3-flags",
+		"x-datadog-trace-id",
+		"x-datadog-parent-id",
+		"x-datadog-sampled",
+	}
 
-	span.LogFields(
-		otlog.String("event", traceName),
-		otlog.String("value", logValue),
-    )
+	for _, header := range incomingHeaders {
+		req.Header.Set(header, r.Header.Get(header))
+	}
+	req.Header.Set("user-agent", r.Header.Get("user-agent"))
+
+	resp, err := do(req)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	w.Write([]byte(string(resp)))
 }
 
-func TraceWithForward(w http.ResponseWriter, r *http.Request, traceName, url string) {
-	tracer, closer := initTracing(traceName)
-	defer closer.Close()
+func Trace(w http.ResponseWriter, r *http.Request, traceName, url string) {
+	tracer := opentracing.GlobalTracer()
 
-	spanCtx, _ := tracer.Extract(opentracing.HTTPHeaders, opentracing.HTTPHeadersCarrier(r.Header))
-	span := tracer.StartSpan(traceName, ext.RPCServerOption(spanCtx))
+	spanCtx, err := tracer.Extract(opentracing.HTTPHeaders, opentracing.HTTPHeadersCarrier(r.Header))
+	if err != nil {
+		panic(err)
+	}
+
+	span := tracer.StartSpan(traceName, opentracing.ChildOf(spanCtx), ext.SpanKindRPCServer)
 	defer span.Finish()
 
 	req, err := http.NewRequest("GET", url, nil)
@@ -60,44 +79,47 @@ func TraceWithForward(w http.ResponseWriter, r *http.Request, traceName, url str
 		panic(err.Error())
 	}
 
-	ext.SpanKindRPCClient.Set(span)
-	ext.HTTPUrl.Set(span, url)
-	ext.HTTPMethod.Set(span, "GET")
-	span.Tracer().Inject(
+	tracer.Inject(
 		span.Context(),
 		opentracing.HTTPHeaders,
 		opentracing.HTTPHeadersCarrier(req.Header),
 	)
+
+	incomingHeaders := []string{
+		"x-request-id",
+		"x-datadog-trace-id",
+		"x-datadog-parent-id",
+		"x-datadog-sampled",
+	}
+	for _, header := range incomingHeaders {
+		req.Header.Set(header, r.Header.Get(header))
+	}
+	req.Header.Set("user-agent", r.Header.Get("user-agent"))
 
 	resp, err := do(req)
 	if err != nil {
 		panic(err.Error())
 	}
 
-	respStr := string(resp)
-
-	span.LogFields(
-		otlog.String("event", traceName),
-		otlog.String("value", respStr),
-	)
-
-	w.Write([]byte(respStr))
+	w.Write([]byte(string(resp)))
 }
 
-func initTracing(service string) (opentracing.Tracer, io.Closer) {
-	cfg := &config.Configuration{
-		Sampler: &config.SamplerConfig{
-			Type:  "const",
-			Param: 1,
-		},
-		Reporter: &config.ReporterConfig{
-			LogSpans: true,
-		},
-	}
-	tracer, closer, err := cfg.New(service, config.Logger(jaeger.StdLogger))
-	if err != nil {
-		panic(fmt.Sprintf("ERROR: cannot init Jaeger: %v\n", err))
-	}
+func InitTracing(serviceName string) (opentracing.Tracer, io.Closer) {
+	zipkinPropagator := zipkin.NewZipkinB3HTTPHeaderPropagator()
+	injector := jaeger.TracerOptions.Injector(opentracing.HTTPHeaders, zipkinPropagator)
+	extractor := jaeger.TracerOptions.Extractor(opentracing.HTTPHeaders, zipkinPropagator)
+	zipkinSharedRPCSpan := jaeger.TracerOptions.ZipkinSharedRPCSpan(true)
+
+	tracer, closer := jaeger.NewTracer(
+		serviceName,
+		jaeger.NewConstSampler(true),
+		jaeger.NewNullReporter(),
+		injector,
+		extractor,
+		zipkinSharedRPCSpan,
+	)
+
+	opentracing.SetGlobalTracer(tracer)
 	return tracer, closer
 }
 
