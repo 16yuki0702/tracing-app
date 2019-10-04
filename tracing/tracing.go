@@ -1,8 +1,10 @@
 package tracing
 
 import (
-    "ioutil"
 	"context"
+	"fmt"
+	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -10,10 +12,10 @@ import (
 	"syscall"
 	"time"
 
-    opentracing "github.com/opentracing/opentracing-go"
+	opentracing "github.com/opentracing/opentracing-go"
+	"github.com/opentracing/opentracing-go/ext"
+	otlog "github.com/opentracing/opentracing-go/log"
 	jaeger "github.com/uber/jaeger-client-go"
-    "github.com/opentracing/opentracing-go/ext"
-    otlog "github.com/opentracing/opentracing-go/log"
 	config "github.com/uber/jaeger-client-go/config"
 )
 
@@ -31,21 +33,35 @@ func WaitForShutdown(srv *http.Server) {
 	os.Exit(0)
 }
 
-func Trace(w http.ResponseWriter, r *http.Request, traceName, url string) {
-    tracer, closer := initTracing(traceName)
+func Trace(w http.ResponseWriter, r *http.Request, traceName, logValue string) {
+	tracer, closer := initTracing(traceName)
 	defer closer.Close()
 
-    spanCtx, _ := tracer.Extract(opentracing.HTTPHeaders, opentracing.HTTPHeadersCarrier(r.Header))
+	spanCtx, _ := tracer.Extract(opentracing.HTTPHeaders, opentracing.HTTPHeadersCarrier(r.Header))
 	span := tracer.StartSpan(traceName, ext.RPCServerOption(spanCtx))
 	defer span.Finish()
 
-    req, err := http.NewRequest("GET", url, nil)
+	span.LogFields(
+		otlog.String("event", traceName),
+		otlog.String("value", logValue),
+    )
+}
+
+func TraceWithForward(w http.ResponseWriter, r *http.Request, traceName, url string) {
+	tracer, closer := initTracing(traceName)
+	defer closer.Close()
+
+	spanCtx, _ := tracer.Extract(opentracing.HTTPHeaders, opentracing.HTTPHeadersCarrier(r.Header))
+	span := tracer.StartSpan(traceName, ext.RPCServerOption(spanCtx))
+	defer span.Finish()
+
+	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		panic(err.Error())
 	}
 
-    ext.SpanKindRPCClient.Set(span)
-    ext.HTTPUrl.Set(span, url)
+	ext.SpanKindRPCClient.Set(span)
+	ext.HTTPUrl.Set(span, url)
 	ext.HTTPMethod.Set(span, "GET")
 	span.Tracer().Inject(
 		span.Context(),

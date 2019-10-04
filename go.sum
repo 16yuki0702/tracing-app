@@ -8,5 +8,3 @@ github.com/uber/jaeger-client-go v2.19.0+incompatible h1:pbwbYfHUoaase0oPQOdZ1Gc
 github.com/uber/jaeger-client-go v2.19.0+incompatible/go.mod h1:WVhlPFC8FDjOFMMWRy2pZqQJSXxYSwNYOkTr/Z6d3Kk=
 github.com/uber/jaeger-lib v2.2.0+incompatible h1:MxZXOiR2JuoANZ3J6DE/U0kSFv/eJ/GfSYVCjK7dyaw=
 github.com/uber/jaeger-lib v2.2.0+incompatible/go.mod h1:ComeNDZlWwrWnDv8aPp0Ba6+uUTzImX/AauajbLI56U=
-github.com/yurishkuro/opentracing-tutorial v0.0.0-20191003200532-9d2a90094db2 h1:HvTNDoy4NnwYSaC3Tm8S9MMglQ3HgpqmSSz32aTpXa8=
-github.com/yurishkuro/opentracing-tutorial v0.0.0-20191003200532-9d2a90094db2/go.mod h1:OEn3n3nr9jMrVlrCH/v8wRAX3vlZVsny4lvbHvq4mgs=
