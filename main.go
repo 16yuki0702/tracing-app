@@ -18,12 +18,6 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(resptStr))
 }
 
-func generateTraceFunc(envName string) func(w http.ResponseWriter, r *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		tracing.Trace(w, r, os.Getenv("SERVICE_NAME"), os.Getenv(envName))
-	}
-}
-
 func generatePropagateFunc(envName string) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tracing.Propagate(w, r, os.Getenv(envName))
@@ -40,17 +34,13 @@ func getServiceNum() int {
 }
 
 func main() {
-	if os.Getenv("SERVICE_NAME") == "gateway" {
-		log.Println("Start init tracing")
-		_, closer := tracing.InitTracing(os.Getenv("SERVICE_NAME"))
-		defer closer.Close()
-	}
+	_, closer := tracing.InitTracing(os.Getenv("SERVICE_NAME"))
+	defer closer.Close()
 
 	r := mux.NewRouter()
 
 	r.HandleFunc("/", handler)
 	for i := getServiceNum(); i > 0; i-- {
-		r.HandleFunc(fmt.Sprintf("/trace%d", i), generateTraceFunc(fmt.Sprintf("TRACE%d", i)))
 		r.HandleFunc(fmt.Sprintf("/propagate%d", i), generatePropagateFunc(fmt.Sprintf("PROPAGATE%d", i)))
 	}
 

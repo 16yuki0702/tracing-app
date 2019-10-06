@@ -13,7 +13,6 @@ import (
 	"time"
 
 	opentracing "github.com/opentracing/opentracing-go"
-	"github.com/opentracing/opentracing-go/ext"
 	jaeger "github.com/uber/jaeger-client-go"
 	"github.com/uber/jaeger-client-go/zipkin"
 )
@@ -33,37 +32,6 @@ func WaitForShutdown(srv *http.Server) {
 }
 
 func Propagate(w http.ResponseWriter, r *http.Request, url string) {
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		panic(err.Error())
-	}
-
-	incomingHeaders := []string{
-		"x-request-id",
-		"x-b3-traceid",
-		"x-b3-spanid",
-		"x-b3-parentspanid",
-		"x-b3-sampled",
-		"x-b3-flags",
-		"x-datadog-trace-id",
-		"x-datadog-parent-id",
-		"x-datadog-sampled",
-	}
-
-	for _, header := range incomingHeaders {
-		req.Header.Set(header, r.Header.Get(header))
-	}
-	req.Header.Set("user-agent", r.Header.Get("user-agent"))
-
-	resp, err := do(req)
-	if err != nil {
-		panic(err.Error())
-	}
-
-	w.Write([]byte(string(resp)))
-}
-
-func Trace(w http.ResponseWriter, r *http.Request, traceName, url string) {
 	tracer := opentracing.GlobalTracer()
 
 	spanCtx, err := tracer.Extract(opentracing.HTTPHeaders, opentracing.HTTPHeadersCarrier(r.Header))
@@ -71,32 +39,26 @@ func Trace(w http.ResponseWriter, r *http.Request, traceName, url string) {
 		panic(err)
 	}
 
-	span := tracer.StartSpan(traceName, opentracing.ChildOf(spanCtx), ext.SpanKindRPCServer)
-	defer span.Finish()
-
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		panic(err.Error())
 	}
 
 	tracer.Inject(
-		span.Context(),
+		spanCtx,
 		opentracing.HTTPHeaders,
 		opentracing.HTTPHeadersCarrier(req.Header),
 	)
 
 	incomingHeaders := []string{
 		"x-request-id",
-		"x-datadog-trace-id",
-		"x-datadog-parent-id",
-		"x-datadog-sampled",
+		"user-agent",
 	}
 	for _, header := range incomingHeaders {
 		req.Header.Set(header, r.Header.Get(header))
 	}
-	req.Header.Set("user-agent", r.Header.Get("user-agent"))
 
-	resp, err := do(req)
+	resp, err := doRequest(req)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -123,7 +85,7 @@ func InitTracing(serviceName string) (opentracing.Tracer, io.Closer) {
 	return tracer, closer
 }
 
-func do(req *http.Request) ([]byte, error) {
+func doRequest(req *http.Request) ([]byte, error) {
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err

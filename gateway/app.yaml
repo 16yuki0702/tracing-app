@@ -57,9 +57,9 @@ metadata:
 data:
   SERVICE_NAME: "gateway"
   SERVICE_NUM: "3"
-  TRACE1: "http://dest1:8080"
-  TRACE2: "http://dest1:8080/propagate2"
-  TRACE3: "http://dest3:8080"
+  PROPAGATE1: "http://dest1:8080"
+  PROPAGATE2: "http://dest1:8080/propagate2"
+  PROPAGATE3: "http://dest3:8080"
 ---
 apiVersion: networking.istio.io/v1alpha3
 kind: Gateway
@@ -90,27 +90,11 @@ spec:
     - uri:
         exact: /
     - uri:
-        exact: /trace1
+        exact: /propagate1
     - uri:
-        exact: /trace2
+        exact: /propagate2
     - uri:
-        exact: /trace3
-    route:
-    - destination:
-        host: gateway
-        port:
-          number: 8080
----
-apiVersion: networking.istio.io/v1alpha3
-kind: DestinationRule
-metadata:
-  name: gateway
-spec:
-  host: gateway
-  subsets:
-  - name: v1
-    labels:
-      version: v1
+        exact: /propagate3
     route:
     - destination:
         host: gateway
