@@ -6,7 +6,7 @@ oc delete dc gateway
 oc delete svc gateway
 oc delete bc gateway
 oc delete is gateway
-oc delete configmap gateway
+oc delete configmap gateway-cfg
 oc delete gateway tracing-gateway
 oc delete virtualservice tracing-app
 oc delete destinationrule gateway
