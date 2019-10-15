@@ -3,7 +3,7 @@
 MAX=$1
 
 oc delete dc gateway
-oc delete svc gateway-svc
+oc delete svc gateway
 oc delete bc gateway
 oc delete is gateway
 oc delete configmap gateway
