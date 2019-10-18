@@ -70,7 +70,6 @@ func InitTracing(serviceName string) (opentracing.Tracer, io.Closer) {
 	zipkinPropagator := zipkin.NewZipkinB3HTTPHeaderPropagator()
 	injector := jaeger.TracerOptions.Injector(opentracing.HTTPHeaders, zipkinPropagator)
 	extractor := jaeger.TracerOptions.Extractor(opentracing.HTTPHeaders, zipkinPropagator)
-	zipkinSharedRPCSpan := jaeger.TracerOptions.ZipkinSharedRPCSpan(true)
 
 	tracer, closer := jaeger.NewTracer(
 		serviceName,
@@ -78,7 +77,6 @@ func InitTracing(serviceName string) (opentracing.Tracer, io.Closer) {
 		jaeger.NewNullReporter(),
 		injector,
 		extractor,
-		zipkinSharedRPCSpan,
 	)
 
 	opentracing.SetGlobalTracer(tracer)
