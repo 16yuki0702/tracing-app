@@ -11,6 +11,13 @@ oc delete gateway tracing-gateway
 oc delete virtualservice tracing-app
 oc delete destinationrule gateway
 
+# delete gitlab runner
+oc delete dc gitlab-runner
+oc delete is gitlab-runner
+oc delete sa gitlab-runner-user
+oc delete configmap gitlab-runner-scripts
+oc delete rolebinding gitlab-runner_edit
+
 for i in `seq 1 $MAX`
 do
   oc delete dc "dest$i"

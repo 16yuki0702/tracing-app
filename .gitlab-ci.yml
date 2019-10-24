@@ -1,0 +1,19 @@
+image: quay.io/openshift-pipeline/openshift-cli:latest
+
+stages:
+  - deploy
+
+variables:
+  OPENSHIFT_PROJECT: sample-tracing
+
+before_script:
+  - oc login $OPENSHIFT_ADDRESS --token=$OPENSHIFT_TOKEN --insecure-skip-tls-verify
+
+production_deploy:
+  stage: deploy
+  only:
+    - master
+  script: |
+    oc project $OPENSHIFT_PROJECT
+    ./build.sh
+    ./deploy.sh

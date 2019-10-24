@@ -6,7 +6,7 @@ metadata:
   name: dest1
 spec:
   replicas: 1
-  revisionHistoryLimit: 5
+  revisionHistoryLimit: 2
   selector:
     app: dest1
     deploymentconfig: dest1
