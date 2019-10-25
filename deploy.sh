@@ -1,15 +1,14 @@
 #!/bin/bash
 
-oc get dc gateway > /dev/null 2>&1
-
-if [ $ret -e 0 ]; then
-  oc apply -f gateway/app.yaml
-  oc apply -f dest1/app.yaml
-  oc apply -f dest2/app.yaml
-  oc apply -f dest3/app.yaml
-else
-  oc rollout latest gateway
-  oc rollout latest dest1
-  oc rollout latest dest2
-  oc rollout latest dest3
+ret=`oc get dc gateway 2>&1`
+if [[ $ret =~ NAME ]]; then
+  # for resource limits
+  oc delete dc gateway
+  oc delete dc dest1
+  oc delete dc dest2
+  oc delete dc dest3
 fi
+oc apply -f gateway/app.yaml
+oc apply -f dest1/app.yaml
+oc apply -f dest2/app.yaml
+oc apply -f dest3/app.yaml

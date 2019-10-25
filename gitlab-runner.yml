@@ -32,10 +32,10 @@ objects:
       app: ${APPLICATION_NAME}
   spec:
     tags:
-    - name: latest
+    - name: 12.4.0
       from:
         kind: DockerImage
-        name: gitlab/gitlab-runner:latest
+        name: gitlab/gitlab-runner:v12.4.0
 - kind: ConfigMap
   apiVersion: v1
   metadata:
@@ -98,7 +98,7 @@ objects:
           - gitlab-runner
         from:
           kind: ImageStreamTag
-          name: ${APPLICATION_NAME}:latest
+          name: ${APPLICATION_NAME}:12.4.0
     replicas: 1
     test: false
     selector:
