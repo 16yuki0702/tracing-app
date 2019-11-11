@@ -1,0 +1,16 @@
+apiVersion: tekton.dev/v1alpha1
+kind: PipelineRun
+metadata:
+  name: tracing-pipeline-run
+  generateName: tracing-pipeline-run-
+spec:
+  pipelineRef:
+    name: tracing-pipeline
+  serviceAccount: 'pipeline'
+  resources:
+  - name: app-source
+    resourceRef:
+      name: pipeline-source
+  - name: app-image
+    resourceRef:
+      name: pipeline-image
