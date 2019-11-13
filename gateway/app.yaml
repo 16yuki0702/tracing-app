@@ -100,6 +100,14 @@ spec:
         host: gateway
         port:
           number: 8080
+  - match:
+    - uri:
+        exact: /event-display
+    route:
+    - destination:
+        host: event-display
+        port:
+          number: 8080
 ---
 apiVersion: networking.istio.io/v1alpha3
 kind: DestinationRule
@@ -107,6 +115,17 @@ metadata:
   name: gateway
 spec:
   host: gateway
+  subsets:
+  - name: v1
+    labels:
+      version: v1
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: event-display
+spec:
+  host: event-display
   subsets:
   - name: v1
     labels:
