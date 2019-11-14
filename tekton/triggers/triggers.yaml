@@ -1,0 +1,80 @@
+apiVersion: tekton.dev/v1alpha1
+kind: TriggerTemplate
+metadata:
+  name: triggertemplate
+  namespace: sample-tracing
+spec:
+  params:
+    - name: gitrevision
+      description: The git revision
+      default: master
+    - name: gitrepositoryurl
+      description: The git repository url
+    - name: namespace
+      description: The namespace to create the resources
+  resourcetemplates:
+    - apiVersion: tekton.dev/v1alpha1
+      kind: PipelineResource
+      metadata:
+        name: source-repo-$(uid)
+        namespace: $(params.namespace)
+      spec:
+        type: git
+        params:
+        - name: revision
+          value: $(params.gitrevision)
+        - name: url
+          value: $(params.gitrepositoryurl)
+    - apiVersion: tekton.dev/v1alpha1
+      kind: PipelineResource
+      metadata:
+        name: image-source-$(uid)
+        namespace: $(params.namespace)
+      spec:
+        type: image
+        params:
+          - name: url
+            value: image-registry.openshift-image-registry.svc:5000/sample-tracing/gateway
+    - apiVersion: tekton.dev/v1alpha1
+      kind: PipelineRun
+      metadata:
+        name: trigger-pipeline-run-$(uid)
+        namespace: $(params.namespace)
+      spec:
+        serviceAccount: tekton-triggers-admin
+        pipelineRef:
+          name: trigger-pipeline
+        resources:
+          - name: source-repo
+            resourceRef:
+              name: source-repo-$(uid)
+          - name: image-source
+            resourceRef:
+              name: image-source-$(uid)
+---
+apiVersion: tekton.dev/v1alpha1
+kind: TriggerBinding
+metadata:
+  name: pipelinebinding
+  namespace: sample-tracing
+spec:
+  params:
+    - name: gitrevision
+      value: $(body.head_commit.id)
+    - name: namespace
+      value: sample-tracing
+    - name: gitrepositoryurl
+      value: "https://github.com/$(body.repository.full_name)"
+---
+apiVersion: tekton.dev/v1alpha1
+kind: EventListener
+metadata:
+  name: pipeline-listener
+  namespace: sample-tracing
+spec:
+  serviceAccountName: tekton-triggers-admin
+  triggers:
+    - template:
+        name: triggertemplate
+      binding:
+        name: pipelinebinding

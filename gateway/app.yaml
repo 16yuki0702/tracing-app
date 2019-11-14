@@ -102,10 +102,10 @@ spec:
           number: 8080
   - match:
     - uri:
-        exact: /event-display
+        exact: /eventlistener
     route:
     - destination:
-        host: event-display
+        host: el-pipeline-listener
         port:
           number: 8080
 ---
@@ -123,9 +123,9 @@ spec:
 apiVersion: networking.istio.io/v1alpha3
 kind: DestinationRule
 metadata:
-  name: event-display
+  name: el-pipeline-listener
 spec:
-  host: event-display
+  host: el-pipeline-listener
   subsets:
   - name: v1
     labels:

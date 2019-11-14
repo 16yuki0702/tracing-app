@@ -1,0 +1,163 @@
+---
+apiVersion: tekton.dev/v1alpha1
+kind: Pipeline
+metadata:
+  name: trigger-pipeline
+  namespace: sample-tracing
+spec:
+  resources:
+    - name: source-repo
+      type: git
+    - name: image-source
+      type: image
+  tasks:
+    - name: build-docker-image
+      taskRef:
+        name: build-docker-image
+      params:
+        - name: pathToContext
+          value: /workspace/source-repo
+      resources:
+        inputs:
+          - name: source-repo
+            resource: source-repo
+        outputs:
+          - name: builtImage
+            resource: image-source
+    - name: deploy
+      taskRef:
+        name: deploy
+      resources:
+        inputs:
+          - name: image-source
+            resource: image-source
+            from:
+              - build-docker-image
+---
+apiVersion: tekton.dev/v1alpha1
+kind: Task
+metadata:
+  name: deploy
+  namespace: sample-tracing
+spec:
+  inputs:
+    resources:
+      - name: image-source
+        type: image
+  steps:
+    - name: rollout-gateway
+      image: quay.io/openshift/origin-cli:latest
+      command: ["/usr/bin/oc"]
+      args:
+        - "rollout"
+        - "latest"
+        - "gateway"
+    - name: rollout-dest1
+      image: quay.io/openshift/origin-cli:latest
+      command: ["/usr/bin/oc"]
+      args:
+        - "rollout"
+        - "latest"
+        - "dest1"
+    - name: rollout-dest2
+      image: quay.io/openshift/origin-cli:latest
+      command: ["/usr/bin/oc"]
+      args:
+        - "rollout"
+        - "latest"
+        - "dest2"
+    - name: rollout-dest3
+      image: quay.io/openshift/origin-cli:latest
+      command: ["/usr/bin/oc"]
+      args:
+        - "rollout"
+        - "latest"
+        - "dest3"
+---
+apiVersion: tekton.dev/v1alpha1
+kind: Task
+metadata:
+  name: build-docker-image
+  namespace: sample-tracing
+spec:
+  inputs:
+    resources:
+      - name: source-repo
+        type: git
+    params:
+      - name: pathToContext
+        description:
+          The build directory used by img
+        default: /workspace/source-repo
+  outputs:
+    resources:
+      - name: builtImage
+        type: image
+  steps:
+    - name: build-and-push
+      image: r.j3ss.co/img
+      command:
+        - /usr/bin/img
+      args:
+        - build
+        - -t
+        - "${outputs.resources.builtImage.url}"
+        - --no-cache
+        - "${inputs.params.pathToContext}"
+          #---
+#apiVersion: tekton.dev/v1alpha1
+#kind: Condition
+#metadata:
+#  name: go-test
+#  namespace: sample-tracing
+#spec:
+#  resources:
+#    - name: source-repo
+#      type: git
+#  check:
+#    image: golang
+#    command: ["go"]
+#    args: ['test', "$(inputs.resources.source-repo.path)/..."]
+    #---
+    #apiVersion: v1
+    #kind: Service
+    #metadata:
+    #  name: event-display
+    #  labels:
+    #    app: event-display
+    #    service: event-display
+    #spec:
+    #  ports:
+    #    - name: listener
+    #      port: 8080
+    #      protocol: TCP
+    #  selector:
+    #    app: event-display
+    #    deploymentconfig: event-display
+    #---
+    #apiVersion: apps.openshift.io/v1
+    #kind: DeploymentConfig
+    #metadata:
+    #  name: event-display
+    #  labels:
+    #    app: event-display
+    #spec:
+    #  replicas: 1
+    #  revisionHistoryLimit: 2
+    #  selector:
+    #    app: event-display
+    #    deploymentconfig: event-display
+    #  strategy:
+    #    type: Rolling
+    #  template:
+    #    metadata:
+    #      labels:
+    #        app: event-display
+    #        version: v1
+    #        deploymentconfig: event-display
+    #    spec:
+    #      restartPolicy: Always
+    #      containers:
+    #      - image: quay.io/openshift-knative/knative-eventing-sources-event-display:v0.10.0
+    #        imagePullPolicy: Always
+    #        name: event-display
