@@ -69,30 +69,6 @@ metadata:
   name: build-docker-image
   namespace: sample-tracing
 spec:
-  #inputs:
-  #  resources:
-  #    - name: source-repo
-  #      type: git
-  #  params:
-  #    - name: pathToContext
-  #      description:
-  #        The build directory used by img
-  #      default: /workspace/source-repo
-  #outputs:
-  #  resources:
-  #    - name: builtImage
-  #      type: image
-  #steps:
-  #  - name: build-and-push
-  #    image: r.j3ss.co/img
-  #    command:
-  #      - /usr/bin/img
-  #    args:
-  #      - build
-  #      - -t
-  #      - "${outputs.resources.builtImage.url}"
-  #      - --no-cache
-  #      - "${inputs.params.pathToContext}"
   inputs:
     resources:
       - name: source-repo
@@ -105,7 +81,7 @@ spec:
   - name: build
     image: quay.io/buildah/stable
     workingdir: /workspace/source-repo
-    command: ['ls', '-l', ';', 'buildah', 'bud', '--tls-verify=false', '--layers', '-f', '.', '-t', '$(outputs.resources.builtImage.url)', '.']
+    command: ['buildah', 'bud', '--tls-verify=false', '--layers', '-f', '.', '-t', '$(outputs.resources.builtImage.url)', '.']
     volumeMounts:
     - name: varlibcontainers
       mountPath: /var/lib/containers
@@ -122,60 +98,3 @@ spec:
   volumes:
   - name: varlibcontainers
     emptyDir: {}
-          #---
-#apiVersion: tekton.dev/v1alpha1
-#kind: Condition
-#metadata:
-#  name: go-test
-#  namespace: sample-tracing
-#spec:
-#  resources:
-#    - name: source-repo
-#      type: git
-#  check:
-#    image: golang
-#    command: ["go"]
-#    args: ['test', "$(inputs.resources.source-repo.path)/..."]
-    #---
-    #apiVersion: v1
-    #kind: Service
-    #metadata:
-    #  name: event-display
-    #  labels:
-    #    app: event-display
-    #    service: event-display
-    #spec:
-    #  ports:
-    #    - name: listener
-    #      port: 8080
-    #      protocol: TCP
-    #  selector:
-    #    app: event-display
-    #    deploymentconfig: event-display
-    #---
-    #apiVersion: apps.openshift.io/v1
-    #kind: DeploymentConfig
-    #metadata:
-    #  name: event-display
-    #  labels:
-    #    app: event-display
-    #spec:
-    #  replicas: 1
-    #  revisionHistoryLimit: 2
-    #  selector:
-    #    app: event-display
-    #    deploymentconfig: event-display
-    #  strategy:
-    #    type: Rolling
-    #  template:
-    #    metadata:
-    #      labels:
-    #        app: event-display
-    #        version: v1
-    #        deploymentconfig: event-display
-    #    spec:
-    #      restartPolicy: Always
-    #      containers:
-    #      - image: quay.io/openshift-knative/knative-eventing-sources-event-display:v0.10.0
-    #        imagePullPolicy: Always
-    #        name: event-display
