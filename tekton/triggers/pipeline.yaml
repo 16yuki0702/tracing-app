@@ -80,30 +80,59 @@ metadata:
   name: build-docker-image
   namespace: sample-tracing
 spec:
+  #inputs:
+  #  resources:
+  #    - name: source-repo
+  #      type: git
+  #  params:
+  #    - name: pathToContext
+  #      description:
+  #        The build directory used by img
+  #      default: /workspace/source-repo
+  #outputs:
+  #  resources:
+  #    - name: builtImage
+  #      type: image
+  #steps:
+  #  - name: build-and-push
+  #    image: r.j3ss.co/img
+  #    command:
+  #      - /usr/bin/img
+  #    args:
+  #      - build
+  #      - -t
+  #      - "${outputs.resources.builtImage.url}"
+  #      - --no-cache
+  #      - "${inputs.params.pathToContext}"
   inputs:
     resources:
       - name: source-repo
         type: git
-    params:
-      - name: pathToContext
-        description:
-          The build directory used by img
-        default: /workspace/source-repo
   outputs:
     resources:
       - name: builtImage
         type: image
   steps:
-    - name: build-and-push
-      image: r.j3ss.co/img
-      command:
-        - /usr/bin/img
-      args:
-        - build
-        - -t
-        - "${outputs.resources.builtImage.url}"
-        - --no-cache
-        - "${inputs.params.pathToContext}"
+  - name: build
+    image: quay.io/buildah/stable
+    workingdir: /workspace/source
+    command: ['buildah', 'bud', '--tls-verify=false', '--layers', '-f', '.', '-t', '$(outputs.resources.builtImage.url)', '.']
+    volumeMounts:
+    - name: varlibcontainers
+      mountPath: /var/lib/containers
+    securityContext:
+      privileged: true
+  - name: push
+    image: quay.io/buildah/stable
+    command: ['buildah', 'push', '--tls-verify=false', '$(outputs.resources.builtImage.url)', 'docker://$(outputs.resources.builtImage.url)']
+    volumeMounts:
+    - name: varlibcontainers
+      mountPath: /var/lib/containers
+    securityContext:
+      privileged: true
+  volumes:
+  - name: varlibcontainers
+    emptyDir: {}
           #---
 #apiVersion: tekton.dev/v1alpha1
 #kind: Condition
