@@ -59,12 +59,12 @@ metadata:
   namespace: sample-tracing
 spec:
   params:
-    - name: gitrevision
-      value: $(body.head_commit.id)
     - name: namespace
       value: sample-tracing
+    - name: gitrevision
+      value: $(body.head_commit.id)
     - name: gitrepositoryurl
-      value: "https://github.com/$(body.repository.full_name)"
+      value: "https://github.com/$(body.repository.full_name).git"
 ---
 apiVersion: tekton.dev/v1alpha1
 kind: EventListener

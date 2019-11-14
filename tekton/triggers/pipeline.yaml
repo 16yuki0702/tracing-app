@@ -24,12 +24,6 @@ spec:
     - name: deploy
       taskRef:
         name: deploy
-      resources:
-        inputs:
-          - name: image-source
-            resource: image-source
-            from:
-              - build-docker-image
 ---
 apiVersion: tekton.dev/v1alpha1
 kind: Task
@@ -37,10 +31,6 @@ metadata:
   name: deploy
   namespace: sample-tracing
 spec:
-  inputs:
-    resources:
-      - name: image-source
-        type: image
   steps:
     - name: rollout-gateway
       image: quay.io/openshift/origin-cli:latest
