@@ -105,8 +105,7 @@ spec:
   - name: build
     image: quay.io/buildah/stable
     workingdir: /workspace/source-repo
-    #command: ['buildah', 'bud', '--tls-verify=false', '--layers', '-f', '.', '-t', '$(outputs.resources.builtImage.url)', '.']
-    command: ['ls', '-l']
+    command: ['ls', '-l', '&&', 'buildah', 'bud', '--tls-verify=false', '--layers', '-f', '.', '-t', '$(outputs.resources.builtImage.url)', '.']
     volumeMounts:
     - name: varlibcontainers
       mountPath: /var/lib/containers
