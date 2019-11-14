@@ -102,7 +102,7 @@ spec:
   steps:
   - name: build
     image: quay.io/buildah/stable
-    workingdir: /workspace/source
+    workingdir: /workspace/source-repo
     command: ['buildah', 'bud', '--tls-verify=false', '--layers', '-f', '.', '-t', '$(outputs.resources.builtImage.url)', '.']
     volumeMounts:
     - name: varlibcontainers
