@@ -14,9 +14,6 @@ spec:
     - name: build-docker-image
       taskRef:
         name: build-docker-image
-      params:
-        - name: pathToContext
-          value: /workspace/source-repo
       resources:
         inputs:
           - name: source-repo
