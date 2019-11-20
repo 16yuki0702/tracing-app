@@ -14,7 +14,7 @@ import (
 
 func handler(w http.ResponseWriter, r *http.Request) {
 	serviceName := os.Getenv("SERVICE_NAME")
-	resptStr := fmt.Sprintf("Test from %s!!", serviceName)
+	resptStr := fmt.Sprintf("Hello from %s!!", serviceName)
 	w.Write([]byte(resptStr))
 }
 
