@@ -1,15 +1,15 @@
 apiVersion: apps.openshift.io/v1
 kind: DeploymentConfig
 metadata:
-  name: gateway
+  name: sample-gateway
   labels:
-    app: gateway
+    app: sample-gateway
 spec:
   replicas: 1
   revisionHistoryLimit: 2
   selector:
-    app: gateway
-    deploymentconfig: gateway
+    app: sample-gateway
+    deploymentconfig: sample-gateway
   strategy:
     activeDeadlineSeconds: 21600
     resources: {}
@@ -19,43 +19,43 @@ spec:
       annotations:
         sidecar.istio.io/inject: "true"
       labels:
-        app: gateway
+        app: sample-gateway
         version: v1
-        deploymentconfig: gateway
+        deploymentconfig: sample-gateway
     spec:
       restartPolicy: Always
       containers:
       - image: image-registry.openshift-image-registry.svc:5000/sample-tracing/gateway:latest
         imagePullPolicy: Always
-        name: gateway
+        name: sample-gateway
         ports:
         - containerPort: 8080
         envFrom:
         - configMapRef:
-            name: gateway-cfg
+            name: sample-gateway-cfg
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: gateway
+  name: sample-gateway
   labels:
-    app: gateway
-    service: gateway
+    app: sample-gateway
+    service: sample-gateway
 spec:
   ports:
   - name: http
     port: 8080
     targetPort: 8080
   selector:
-    app: gateway
-    deploymentconfig: gateway
+    app: sample-gateway
+    deploymentconfig: sample-gateway
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: gateway-cfg
+  name: sample-gateway-cfg
 data:
-  SERVICE_NAME: "gateway"
+  SERVICE_NAME: "sample-gateway"
   SERVICE_NUM: "3"
   PROPAGATE1: "http://dest1:8080"
   PROPAGATE2: "http://dest1:8080/propagate2"
@@ -64,7 +64,8 @@ data:
 apiVersion: networking.istio.io/v1alpha3
 kind: Gateway
 metadata:
-  name: tracing-gateway
+  name: sample-gateway
+  namespace: sample-tracing
 spec:
   selector:
     istio: ingressgateway
@@ -79,12 +80,13 @@ spec:
 apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
 metadata:
-  name: tracing-app
+  name: sample-gateway
+  namespace: sample-tracing
 spec:
   hosts:
   - "*"
   gateways:
-  - tracing-gateway
+  - sample-gateway
   http:
   - match:
     - uri:
@@ -97,7 +99,7 @@ spec:
         exact: /propagate3
     route:
     - destination:
-        host: gateway
+        host: sample-gateway
         port:
           number: 8080
   - match:
@@ -112,9 +114,10 @@ spec:
 apiVersion: networking.istio.io/v1alpha3
 kind: DestinationRule
 metadata:
-  name: gateway
+  name: sample-gateway
+  namespace: sample-tracing
 spec:
-  host: gateway
+  host: sample-gateway
   subsets:
   - name: v1
     labels:
