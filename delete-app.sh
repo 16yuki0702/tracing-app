@@ -1,15 +1,16 @@
 #!/bin/bash
 
 MAX=$1
+USER=$2
 
-oc delete dc gateway
-oc delete svc gateway
-oc delete bc gateway
-oc delete is gateway
-oc delete configmap gateway-cfg
-oc delete gateway tracing-gateway
-oc delete virtualservice tracing-app
-oc delete destinationrule gateway
+oc delete dc "$USER-gateway"
+oc delete svc "$USER-gateway"
+#oc delete bc gateway
+#oc delete is gateway
+oc delete configmap "$USER-gateway-cfg"
+oc delete gateway "$USER-gateway"
+oc delete virtualservice "$USER-gateway"
+oc delete destinationrule "$USER-gateway"
 
 # delete gitlab runner
 oc delete dc gitlab-runner
