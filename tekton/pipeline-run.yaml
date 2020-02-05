@@ -6,7 +6,7 @@ metadata:
 spec:
   pipelineRef:
     name: tracing-pipeline
-  serviceAccount: 'pipeline'
+  serviceAccountName: 'pipeline'
   resources:
   - name: app-source
     resourceRef:
