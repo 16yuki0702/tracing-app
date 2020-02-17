@@ -1,33 +1,6 @@
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: dest1-v1
-  labels:
-    app: dest1
-    version: v1
-spec:
-  replicas: 1
-  template:
-    metadata:
-      annotations:
-        sidecar.istio.io/inject: "true"
-      labels:
-        app: dest1
-        version: v1
-    spec:
-      containers:
-      - name: dest1
-        image: image-registry.openshift-image-registry.svc:5000/sample-tracing/gateway:latest
-        imagePullPolicy: Always
-        ports:
-        - containerPort: 8080
-        envFrom:
-        - configMapRef:
-            name: dest1-v1-cfg
----
-apiVersion: extensions/v1beta1
-kind: Deployment
-metadata:
   name: dest1-v2
   labels:
     app: dest1
@@ -53,30 +26,6 @@ spec:
             name: dest1-v2-cfg
 ---
 apiVersion: v1
-kind: Service
-metadata:
-  name: dest1
-  labels:
-    app: dest1
-    service: dest1
-spec:
-  ports:
-  - name: http
-    port: 8080
-    targetPort: 8080
-  selector:
-    app: dest1
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: dest1-v1-cfg
-data:
-  SERVICE_NAME: "dest1-v1"
-  SERVICE_NUM: "3"
-  PROPAGATE2: "http://dest2:8080"
----
-apiVersion: v1
 kind: ConfigMap
 metadata:
   name: dest1-v2-cfg
@@ -97,11 +46,11 @@ spec:
     - destination:
         host: dest1
         subset: v1
-      weight: 30
+      weight: 70
     - destination:
         host: dest1
         subset: v2
-      weight: 70
+      weight: 30
 ---
 apiVersion: networking.istio.io/v1alpha3
 kind: DestinationRule

@@ -1,19 +1,12 @@
-apiVersion: apps.openshift.io/v1
-kind: DeploymentConfig
+apiVersion: extensions/v1beta1
+kind: Deployment
 metadata:
+  name: dest1-v1
   labels:
     app: dest1
-  name: dest1
+    version: v1
 spec:
   replicas: 1
-  revisionHistoryLimit: 2
-  selector:
-    app: dest1
-    deploymentconfig: dest1
-  strategy:
-    activeDeadlineSeconds: 21600
-    resources: {}
-    type: Rolling
   template:
     metadata:
       annotations:
@@ -21,18 +14,16 @@ spec:
       labels:
         app: dest1
         version: v1
-        deploymentconfig: dest1
     spec:
-      restartPolicy: Always
       containers:
-      - image: image-registry.openshift-image-registry.svc:5000/sample-tracing/gateway:latest
+      - name: dest1
+        image: image-registry.openshift-image-registry.svc:5000/sample-tracing/gateway:latest
         imagePullPolicy: Always
-        name: dest1
         ports:
         - containerPort: 8080
         envFrom:
         - configMapRef:
-            name: dest1-cfg
+            name: dest1-v1-cfg
 ---
 apiVersion: v1
 kind: Service
@@ -48,13 +39,36 @@ spec:
     targetPort: 8080
   selector:
     app: dest1
-    deploymentconfig: dest1
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: dest1-cfg
+  name: dest1-v1-cfg
 data:
-  SERVICE_NAME: "dest1"
+  SERVICE_NAME: "dest1-v1"
   SERVICE_NUM: "3"
   PROPAGATE2: "http://dest2:8080"
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: dest1
+spec:
+  hosts:
+  - dest1
+  http:
+  - route:
+    - destination:
+        host: dest1
+        subset: v1
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: dest1
+spec:
+  host: dest1
+  subsets:
+  - name: v1
+    labels:
+      version: v1

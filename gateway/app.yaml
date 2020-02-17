@@ -1,19 +1,12 @@
-apiVersion: apps.openshift.io/v1
-kind: DeploymentConfig
+apiVersion: extensions/v1beta1
+kind: Deployment
 metadata:
-  name: sample-gateway
+  name: sample-gateway-v1
   labels:
     app: sample-gateway
+    version: v1
 spec:
   replicas: 1
-  revisionHistoryLimit: 2
-  selector:
-    app: sample-gateway
-    deploymentconfig: sample-gateway
-  strategy:
-    activeDeadlineSeconds: 21600
-    resources: {}
-    type: Rolling
   template:
     metadata:
       annotations:
@@ -21,18 +14,16 @@ spec:
       labels:
         app: sample-gateway
         version: v1
-        deploymentconfig: sample-gateway
     spec:
-      restartPolicy: Always
       containers:
-      - image: image-registry.openshift-image-registry.svc:5000/sample-tracing/gateway:latest
+      - name: sample-gateway
+        image: image-registry.openshift-image-registry.svc:5000/sample-tracing/gateway:latest
         imagePullPolicy: Always
-        name: sample-gateway
         ports:
         - containerPort: 8080
         envFrom:
         - configMapRef:
-            name: sample-gateway-cfg
+            name: sample-gateway-v1-cfg
 ---
 apiVersion: v1
 kind: Service
@@ -48,14 +39,13 @@ spec:
     targetPort: 8080
   selector:
     app: sample-gateway
-    deploymentconfig: sample-gateway
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: sample-gateway-cfg
+  name: sample-gateway-v1-cfg
 data:
-  SERVICE_NAME: "sample-gateway"
+  SERVICE_NAME: "sample-gateway-v1"
   SERVICE_NUM: "3"
   PROPAGATE1: "http://dest1:8080"
   PROPAGATE2: "http://dest1:8080/propagate2"
@@ -100,6 +90,7 @@ spec:
     route:
     - destination:
         host: sample-gateway
+        subset: v1
         port:
           number: 8080
   - match:
