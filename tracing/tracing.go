@@ -3,7 +3,6 @@ package tracing
 import (
 	"context"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -12,9 +11,7 @@ import (
 	"syscall"
 	"time"
 
-	opentracing "github.com/opentracing/opentracing-go"
-	jaeger "github.com/uber/jaeger-client-go"
-	"github.com/uber/jaeger-client-go/zipkin"
+	opentelemetry "go.opentelemetry.io/otel/api/trace"
 )
 
 func WaitForShutdown(srv *http.Server) {
@@ -32,23 +29,15 @@ func WaitForShutdown(srv *http.Server) {
 }
 
 func Propagate(w http.ResponseWriter, r *http.Request, url string) {
-	tracer := opentracing.GlobalTracer()
-
-	spanCtx, err := tracer.Extract(opentracing.HTTPHeaders, opentracing.HTTPHeadersCarrier(r.Header))
-	if err != nil {
-		panic(err)
-	}
+	propagator := opentelemetry.B3{}
+	ctx := propagator.Extract(context.Background(), r.Header)
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		panic(err.Error())
 	}
 
-	tracer.Inject(
-		spanCtx,
-		opentracing.HTTPHeaders,
-		opentracing.HTTPHeadersCarrier(req.Header),
-	)
+	propagator.Inject(ctx, r.Header)
 
 	incomingHeaders := []string{
 		"x-request-id",
@@ -64,23 +53,6 @@ func Propagate(w http.ResponseWriter, r *http.Request, url string) {
 	}
 
 	w.Write([]byte(string(resp)))
-}
-
-func InitTracing(serviceName string) (opentracing.Tracer, io.Closer) {
-	zipkinPropagator := zipkin.NewZipkinB3HTTPHeaderPropagator()
-	injector := jaeger.TracerOptions.Injector(opentracing.HTTPHeaders, zipkinPropagator)
-	extractor := jaeger.TracerOptions.Extractor(opentracing.HTTPHeaders, zipkinPropagator)
-
-	tracer, closer := jaeger.NewTracer(
-		serviceName,
-		jaeger.NewConstSampler(true),
-		jaeger.NewNullReporter(),
-		injector,
-		extractor,
-	)
-
-	opentracing.SetGlobalTracer(tracer)
-	return tracer, closer
 }
 
 func doRequest(req *http.Request) ([]byte, error) {

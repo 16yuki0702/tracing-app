@@ -34,9 +34,6 @@ func getServiceNum() int {
 }
 
 func main() {
-	_, closer := tracing.InitTracing(os.Getenv("SERVICE_NAME"))
-	defer closer.Close()
-
 	r := mux.NewRouter()
 
 	r.HandleFunc("/", handler)
