@@ -5,6 +5,7 @@ USER=$1
 sed -i -e "s/sample-tracing/$USER-tracing/g" gateway/app.yaml
 sed -i -e "s/sample-gateway/$USER-gateway/g" gateway/app.yaml
 sed -i -e "s/sample-tracing/$USER-tracing/g" dest1/app.yaml
+sed -i -e "s/sample-tracing/$USER-tracing/g" dest1/canary.yaml
 sed -i -e "s/sample-tracing/$USER-tracing/g" dest2/app.yaml
 sed -i -e "s/sample-tracing/$USER-tracing/g" dest3/app.yaml
 
